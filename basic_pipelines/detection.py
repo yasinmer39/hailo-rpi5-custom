@@ -5,6 +5,9 @@ import os
 import numpy as np
 import cv2
 import hailo
+import serial
+import time
+import socket
 
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
@@ -18,16 +21,27 @@ from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
 # -----------------------------------------------------------------------------------------------
 # Inheritance from the app_callback_class
 class user_app_callback_class(app_callback_class):
+
     def __init__(self):
         super().__init__()
-        self.new_variable = 42  # New variable example
 
-    def new_function(self):  # New function example
-        return "The meaning of life is: "
+    #def new_function(self):  # New function example
+        # ser = serial.Serial('/dev/ttyAMA10', 115200, timeout=1)  # New variable example
+        # # Write data to STM32
+        # ser.write(b'ping from RPi\n')
+    
+        # # Read 10 bytes from STM32
+        # rx_buffer = ser.read(10)
+        # if rx_buffer:
+        #     print(f"Received: {rx_buffer.decode('utf-8', errors='ignore')}")
 
 # -----------------------------------------------------------------------------------------------
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
+
+# UDP socket setup (bunu bir defa yap, callback içinde değil!)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_address = ('localhost', 5005)  # localhost ve port
 
 # This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
@@ -60,12 +74,15 @@ def app_callback(pad, info, user_data):
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
-        if label == "person":
+        message = f"{label},{confidence:.2f},{bbox}"
+        sock.sendto(message.encode(), server_address)
+        if label == "Ates":
             # Get track ID
             track_id = 0
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
                 track_id = track[0].get_id()
+            
             string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
             detection_count += 1
     if user_data.use_frame:
