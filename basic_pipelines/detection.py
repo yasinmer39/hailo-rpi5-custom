@@ -43,8 +43,12 @@ class user_app_callback_class(app_callback_class):
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = ('localhost', 5005)  # localhost ve port
 
+# Add a global variable to store the last detection details
+last_detection = {"label": None, "confidence": None, "bbox": None}
+
 # This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
+    global last_detection  # Access the global variable
     # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
     # Check if the buffer is valid
@@ -74,8 +78,15 @@ def app_callback(pad, info, user_data):
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
-        message = f"{label},{confidence:.2f},{bbox}"
+    
+        # Call the methods to get the actual bounding box values
+        x_min, y_min, x_max, y_max = bbox.xmin(), bbox.ymin(), bbox.xmax(), bbox.ymax()
+    
+        # Format the message with usable bbox coordinates
+        message = f"{label},{confidence:.2f},{x_min},{y_min},{x_max},{y_max}"
         sock.sendto(message.encode(), server_address)
+    
+        last_detection = {"label": label, "confidence": confidence, "bbox": (x_min, y_min, x_max, y_max)}  # Update last detection
         if label == "Ates":
             # Get track ID
             track_id = 0
@@ -85,6 +96,12 @@ def app_callback(pad, info, user_data):
             
             string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
             detection_count += 1
+
+    # If no detections, send the last detection details
+    if detection_count == 0 and last_detection["label"] is not None:
+        message = f"{last_detection['label']},{last_detection['confidence']:.2f},{last_detection['bbox']}"
+        sock.sendto(message.encode(), server_address)
+
     if user_data.use_frame:
         # Note: using imshow will not work here, as the callback function is not running in the main thread
         # Let's print the detection count to the frame
