@@ -160,7 +160,6 @@ cython_debug/
 # hailo-rpi5-examples specific
 venv_hailo_rpi5_examples/*
 resources/*.mp4
-resources/*.hef
 resources/*.so
 =======
 # Byte-compiled files
@@ -171,7 +170,6 @@ hailo_apps_infra/__pycache__/
 
 # Resources
 resources/*.so
-resources/*.hef
 resources/*.mp4
 
 # Logs and temp files

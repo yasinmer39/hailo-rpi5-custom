@@ -87,7 +87,7 @@ def app_callback(pad, info, user_data):
         sock.sendto(message.encode(), server_address)
     
         last_detection = {"label": label, "confidence": confidence, "bbox": (x_min, y_min, x_max, y_max)}  # Update last detection
-        if label == "Ates":
+        if label == "a":
             # Get track ID
             track_id = 0
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
